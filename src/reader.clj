@@ -2,40 +2,6 @@
 
 (def code-set #{\> \< \+ \- \. \, \[ \]})
 
-(def operator
-  {\> (fn [{:keys [pointer memory]}]
-        {:pointer (inc pointer)
-         :memory  memory})
-   \< (fn [{:keys [pointer memory]}]
-        {:pointer (dec pointer)
-         :memory  memory})
-   \+ (fn [{:keys [pointer memory]}]
-        {:pointer pointer
-         :memory (->> (get memory pointer)
-                      inc
-                      (assoc memory pointer))})
-   \- (fn [{:keys [pointer memory]}]
-        {:pointer pointer
-         :memory (->> (get memory pointer)
-                      dec
-                      (assoc memory pointer))})
-   \. (fn [{:keys [pointer memory]}]
-        (println (get memory pointer))  ; TODO print ascii
-        )
-   \, (fn [{:keys [pointer memory]}]
-        ; TODO get a character (user input)
-        )
-   \[ (fn [{:keys [pointer memory] :as context}]
-        (if (not= 0 (get memory pointer))
-          context
-          context ; TODO Jump to ]
-          ))
-   \] (fn [{:keys [pointer memory] :as context}]
-        (if (= 0 (get memory pointer))
-          context
-          context ; TODO Jump to [
-          ))})
-
 (defn codemap [input-codes]
   (let [codes (vec (seq input-codes))]
     (loop [line 1
@@ -113,6 +79,44 @@
           :else
           (recur (inc index) stack-count find-mode? index codemap))))))
 
+(defn excute! [code-text]
+  (let [linked-codemap (-> code-text
+                           codemap
+                           codemap->linked-codemap)]
+    (loop [code-index 0
+           memory-pointer 0
+           memory (vec (replicate 32768 0))]
+      (let [code (get linked-codemap code-index)
+            a-char (:code code)
+            value (get memory memory-pointer)]
+        (condp = a-char
+          \>
+          (recur (inc code-index) (inc memory-pointer) memory)
+          \<
+          (recur (inc code-index) (dec memory-pointer) memory)
+          \+
+          (recur (inc code-index) memory-pointer (assoc memory memory-pointer (inc value)))
+          \-
+          (recur (inc code-index) memory-pointer (assoc memory memory-pointer (dec value)))
+          \.
+          (do
+            (print (char (get memory memory-pointer)))
+            (recur (inc code-index) memory-pointer memory))
+          \,
+          (do
+            (print "TODO: get user input")
+            (recur (inc code-index) memory-pointer memory))
+          \[
+          (if (= 0 value)
+            (recur (:pair-cursor code) memory-pointer memory)
+            (recur (inc code-index) memory-pointer memory))
+          \]
+          (if (not= 0 value)
+            (recur (:pair-cursor code) memory-pointer memory)
+            (recur (inc code-index) memory-pointer memory))
+          ; default
+          (println ""))))))
+
 (comment
   (codemap "[-] H
            ++++++++++ ++++++++++ ++++++++++ ++++++++++ ++++++++++
@@ -123,4 +127,7 @@
                                 ++++++++++ ++++++++++ ++ ."))
   ;                              123 3  2  441
   (codemap->linked-codemap (codemap "[[[-]++]++[]]"))
+  (excute! "++++++++++
+[>+++++++>++++++++++>+++>+<<<<-]
+>++.>+.+++++++..+++.>++++++++++++++.------------.<<+++++++++++++++.>.+++.------.--------.>+.")
   )
