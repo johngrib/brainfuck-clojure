@@ -65,7 +65,7 @@
 (def find<ON> true)
 (def find<OFF> false)
 
-(defn codemap->loop-check [codemap]
+(defn codemap->linked-codemap [codemap]
   (loop [index 0
          stack-count stack<0>
          find-mode? find<OFF>
@@ -118,9 +118,9 @@
            ++++++++++ ++++++++++ ++++++++++ ++++++++++ ++++++++++
            ++++++++++ ++++++++++ ++ .")
 
-  (codemap->loop-check (codemap "[-] H
+  (codemap->linked-codemap (codemap "[-] H
                                 ++++++++++ ++++++++++ ++++++++++ ++++++++++ ++++++++++
                                 ++++++++++ ++++++++++ ++ ."))
   ;                              123 3  2  441
-  (codemap->loop-check (codemap "[[[-]++]++[]]"))
+  (codemap->linked-codemap (codemap "[[[-]++]++[]]"))
   )
