@@ -8,17 +8,15 @@
         {:pointer (dec pointer)
          :memory  memory})
    \+ (fn [{:keys [pointer memory]}]
-        (let [value (get memory pointer)]
-          {:pointer pointer
-           :memory (assoc memory
-                          pointer
-                          (inc value))}))
+        {:pointer pointer
+         :memory (->> (get memory pointer)
+                      inc
+                      (assoc memory pointer))})
    \- (fn [{:keys [pointer memory]}]
-        (let [value (get memory pointer)]
-          {:pointer pointer
-           :memory (assoc memory
-                          pointer
-                          (dec value))}))
+        {:pointer pointer
+         :memory (->> (get memory pointer)
+                      dec
+                      (assoc memory pointer))})
    \. (fn [{:keys [pointer memory]}]
         (println (get memory pointer))  ; TODO print ascii
         )
