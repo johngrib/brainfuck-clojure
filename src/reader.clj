@@ -110,7 +110,7 @@
     (loop [context {:codemap linked-codemap
                     :code-index 0
                     :memory-pointer 0
-                    :memory (vec (replicate 32768 0))}]
+                    :memory (vec (repeat 32768 0))}]
       (let [code-index (:code-index context)
             memory (:memory context)
             memory-pointer (:memory-pointer context)
