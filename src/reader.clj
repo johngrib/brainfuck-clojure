@@ -103,61 +103,60 @@
         pair-cursor (:pair-cursor code)]
     (assoc context :code-index pair-cursor)))
 
+(defn get-memory-value [{:keys [memory memory-pointer]}]
+  (get memory memory-pointer))
+
+(defn get-source-char [{:keys [codemap code-index]}]
+  (:code (get codemap code-index)))
+
 (defn excute! [code-text]
-  (let [linked-codemap (->> code-text
-                            codemap
-                            codemap->linked-codemap)]
-    (loop [context {:codemap linked-codemap
-                    :code-index 0
-                    :memory-pointer 0
-                    :memory (vec (repeat 32768 0))}]
-      (let [code-index (:code-index context)
-            memory (:memory context)
-            memory-pointer (:memory-pointer context)
-            code (get linked-codemap code-index)
-            a-char (:code code)
-            value (get memory memory-pointer)]
-        (condp = a-char
-          \>
-          (recur (->> context
-                      code-index++
-                      memory-pointer++))
-          \<
-          (recur (->> context
-                      code-index++
-                      memory-pointer--))
-          \+
-          (recur (->> context
-                      code-index++
-                      value++))
-          \-
-          (recur (->> context
-                      code-index++
-                      value--))
-          \.
-          (do
-            (print (char (get memory memory-pointer)))
-            (recur (->> context
-                        code-index++)))
-          \,
-          (do
-            (print "TODO: get user input")
-            (recur (->> context
-                        code-index++)))
-          \[
-          (if (= 0 value)
-            (recur (->> context
-                        jump-to-pair))
-            (recur (->> context
-                        code-index++)))
-          \]
-          (if (not= 0 value)
-            (recur (->> context
-                        jump-to-pair))
-            (recur (->> context
-                        code-index++)))
-          ; default
-          (println ""))))))
+  (loop [context {:codemap (->> code-text
+                                codemap
+                                codemap->linked-codemap)
+                  :code-index 0
+                  :memory-pointer 0
+                  :memory (vec (repeat 32768 0))}]
+    (condp = (get-source-char context)
+      \>
+      (recur (->> context
+                  code-index++
+                  memory-pointer++))
+      \<
+      (recur (->> context
+                  code-index++
+                  memory-pointer--))
+      \+
+      (recur (->> context
+                  code-index++
+                  value++))
+      \-
+      (recur (->> context
+                  code-index++
+                  value--))
+      \.
+      (do
+        (print (char (get-memory-value context)))
+        (recur (->> context
+                    code-index++)))
+      \,
+      (do
+        (print "TODO: get user input")
+        (recur (->> context
+                    code-index++)))
+      \[
+      (if (= 0 (get-memory-value context))
+        (recur (->> context
+                    jump-to-pair))
+        (recur (->> context
+                    code-index++)))
+      \]
+      (if (not= 0 (get-memory-value context))
+        (recur (->> context
+                    jump-to-pair))
+        (recur (->> context
+                    code-index++)))
+      ; default
+      (println ""))))
 
 (comment
   (codemap "[-] H
