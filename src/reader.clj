@@ -79,41 +79,83 @@
           :else
           (recur (inc index) stack-count find-mode? index codemap))))))
 
+(defn code-index++ [{:keys [code-index] :as context}]
+  (assoc context :code-index (inc code-index)))
+
+(defn memory-pointer++ [{:keys [memory-pointer] :as context}]
+  (assoc context :memory-pointer (inc memory-pointer)))
+
+(defn memory-pointer-- [{:keys [memory-pointer] :as context}]
+  (assoc context :memory-pointer (dec memory-pointer)))
+
+(defn value++ [{:keys [memory memory-pointer] :as context}]
+  (let [value (get memory memory-pointer)
+        next-memory (assoc memory memory-pointer (inc value))]
+    (assoc context :memory next-memory)))
+
+(defn value-- [{:keys [memory memory-pointer] :as context}]
+  (let [value (get memory memory-pointer)
+        next-memory (assoc memory memory-pointer (dec value))]
+    (assoc context :memory next-memory)))
+
+(defn jump-to-pair [{:keys [codemap code-index] :as context}]
+  (let [code (get codemap code-index)
+        pair-cursor (:pair-cursor code)]
+    (assoc context :code-index pair-cursor)))
+
 (defn excute! [code-text]
-  (let [linked-codemap (-> code-text
-                           codemap
-                           codemap->linked-codemap)]
-    (loop [code-index 0
-           memory-pointer 0
-           memory (vec (replicate 32768 0))]
-      (let [code (get linked-codemap code-index)
+  (let [linked-codemap (->> code-text
+                            codemap
+                            codemap->linked-codemap)]
+    (loop [context {:codemap linked-codemap
+                    :code-index 0
+                    :memory-pointer 0
+                    :memory (vec (replicate 32768 0))}]
+      (let [code-index (:code-index context)
+            memory (:memory context)
+            memory-pointer (:memory-pointer context)
+            code (get linked-codemap code-index)
             a-char (:code code)
             value (get memory memory-pointer)]
         (condp = a-char
           \>
-          (recur (inc code-index) (inc memory-pointer) memory)
+          (recur (->> context
+                      code-index++
+                      memory-pointer++))
           \<
-          (recur (inc code-index) (dec memory-pointer) memory)
+          (recur (->> context
+                      code-index++
+                      memory-pointer--))
           \+
-          (recur (inc code-index) memory-pointer (assoc memory memory-pointer (inc value)))
+          (recur (->> context
+                      code-index++
+                      value++))
           \-
-          (recur (inc code-index) memory-pointer (assoc memory memory-pointer (dec value)))
+          (recur (->> context
+                      code-index++
+                      value--))
           \.
           (do
             (print (char (get memory memory-pointer)))
-            (recur (inc code-index) memory-pointer memory))
+            (recur (->> context
+                        code-index++)))
           \,
           (do
             (print "TODO: get user input")
-            (recur (inc code-index) memory-pointer memory))
+            (recur (->> context
+                        code-index++)))
           \[
           (if (= 0 value)
-            (recur (:pair-cursor code) memory-pointer memory)
-            (recur (inc code-index) memory-pointer memory))
+            (recur (->> context
+                        jump-to-pair))
+            (recur (->> context
+                        code-index++)))
           \]
           (if (not= 0 value)
-            (recur (:pair-cursor code) memory-pointer memory)
-            (recur (inc code-index) memory-pointer memory))
+            (recur (->> context
+                        jump-to-pair))
+            (recur (->> context
+                        code-index++)))
           ; default
           (println ""))))))
 
