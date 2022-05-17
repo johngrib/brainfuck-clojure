@@ -119,20 +119,20 @@
     (condp = (get-source-char context)
       \>
       (recur (->> context
-                  code-index++
-                  memory-pointer++))
+                  memory-pointer++
+                  code-index++))
       \<
       (recur (->> context
-                  code-index++
-                  memory-pointer--))
+                  memory-pointer--
+                  code-index++))
       \+
       (recur (->> context
-                  code-index++
-                  value++))
+                  value++
+                  code-index++))
       \-
       (recur (->> context
-                  code-index++
-                  value--))
+                  value--
+                  code-index++))
       \.
       (do
         (print (char (get-memory-value context)))
